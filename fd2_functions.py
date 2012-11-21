@@ -1,6 +1,7 @@
+from time import time, clock
 import numpy as np
-
-
+import scipy.sparse as sp
+import scipy.sparse.linalg as splinalg
 
 class BoundaryCondition(object):
     
@@ -39,19 +40,23 @@ def Transmissivity(x, y):
 
 ##########################
 
-def Source(x,y,t): 
+def Source(x,y,t, dx = 1., dy = 1., \
+    infil = False, infilval = 0., \
+    well = False, Qwell = 0.0, wellLoc = [0,0] ): 
     
+  source = 0.0
     #infiltration cases
-    #source = -0.0001 / (t + 1.0)
-    # source = -0.0001* np.sin(np.pi/4 * t )
+  if infil != False:
+    source = infilval
 
-    # well case 
-    source = 0.0
-    if x > 32. and x < 38.:
-      if y > 32. and y < 38.:
-        source = 0.01 / (5. * 5.)
+  # well case 
+  if well != False:
 
-    return source
+    if (wellLoc[0] - dx)<  x  < (wellLoc[0] + dx):
+      if  (wellLoc[1] - dy)<  y  < (wellLoc[1] + dy):
+        source = Qwell / (dx * dy)
+
+  return source
 
 ##########################
 
@@ -63,9 +68,14 @@ def HarmAvg(T1, T2, dx1, dx2):
 
 def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0, K_B =0.0): 
     
+  # # # 
+  # Spatial Solve 
+  # Returns a 2d array of average head values for vertically 
+  # integrated groundwater flow. 
+  # 
+  # OUTPUT
   N = (nx-2) * (ny -2)
 
-  H = np.zeros((ny,nx))
   
   if S == 0: 
     A = np.zeros((N, N))
@@ -74,6 +84,8 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= 
 
   if r.all() == 0:    
     r = np.zeros((N,1))
+
+  tinit = time()
 
   for i in xrange(N):
     
@@ -112,57 +124,65 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= 
       if bc.west_type == "flux":
         r[i] = r[i] - bc.west_val
       else:
-        r[i] = r[i] - CW * bc.west_val
-        A[i,i] = A[i,i] - CW
+        r[i] -= CW * bc.west_val
+        A[i,i] -= CW
     else:
       A[i, i-1] = CW
-      A[i,i] = A[i,i] - CW
+      A[i,i] -= CW
 
     # east face
     if col == (nx-2):
       if bc.east_type == "flux":
-        r[i] = r[i] + bc.east_val
+        r[i] += bc.east_val
       else:
-        r[i] = r[i] - CE * bc.east_val
-        A[i,i] = A[i,i] - CE
+        r[i] -= CE * bc.east_val
+        A[i,i] -= CE
     else:
       A[i,i+1] = CE
-      A[i,i] = A[i,i] - CE
+      A[i,i] -= CE
 
     # south face
     if i < (nx-2):
       if bc.south_type == "flux":
-        r[i] = r[i] - bc.south_val
+        r[i] -= bc.south_val
       else:
-        r[i] = r[i] - CS * bc.south_val
-        A[i,i] = A[i,i] - CS
+        r[i] -= CS * bc.south_val
+        A[i,i] -= CS
     else:
       A[i, i-(nx-2)] = CS
-      A[i,i] = A[i,i] - CS
+      A[i,i] -= CS
     
-    print ""
     # north face
     if i >= (N - (nx-2)):
       if bc.north_type == "flux":
-        r[i] = r[i] + bc.north_val
+        r[i] += bc.north_val
       else:
-        r[i] = r[i] - CN * bc.north_val
-        A[i,i] = A[i,i] - CN
+        r[i] -= CN * bc.north_val
+        A[i,i] -= CN
     else:
       A[i,i +(nx-2)] = CN
-      A[i,i] = A[i,i] - CN
+      A[i,i] -= CN
 
   # end of  loop
-  
-  b = np.linalg.solve(A,r)
+  tpop = time()
+  print "matrix create time = " +str(tpop - tinit)
 
+  # convert to sparse matrix for solve
+  Asparse = sp.dia_matrix(A)
+  b = splinalg.spsolve(Asparse,r)
+
+  print N, len(b)
+
+  tmatsolve = time()
+  print "linalg solve time=  " + str( tmatsolve - tpop)
   
+  
+  H = np.zeros((ny,nx))
+
   # enter solved values into spatial head matrix
-
-  
   for i in xrange(1,nx-1):
       for j in xrange(1,ny-1):
-          H[j,i] = b[ (i-1) + (nx-2) * (j-1) ,0]
+          H[j,i] = b[ (i-1) + (nx-2) * (j-1) ]
 
   # note that boundary condition routine must be changed if the values are functions. 
 

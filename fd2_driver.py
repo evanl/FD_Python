@@ -32,7 +32,7 @@ S = 1000.0 * 9.81 * compressibility * thickness
 tmax = 0.5
 nt = 5
 
-H1 = fd2.TimeSolve( xw , xe, ys, yn, nx, ny, dx, dy, bc, tmax, nt, S)
+#H1 = fd2.TimeSolve( xw , xe, ys, yn, nx, ny, dx, dy, bc, tmax, nt, S)
 
 HL = fd2.SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 11.0, K_B = 0.00005/5.0)
 
