@@ -27,11 +27,8 @@ S = 1000.0 * 9.81 * compressibility * thickness
 
 tmax = 0.5
 nt = 5
-
-bc = fd2.BoundaryCondition("head", 10.0,\
-    "head", 10.0, \
-    "head", 10.0, \
-    "head", 10.0)
+                          #west,        east        south        north
+bc = fd2.BoundaryCondition("head",5.0,"head", 10.0,"flux", 0.0,"flux", 0.0)
 
 dx = (xe - xw)/(nx-1)
 dy = (yn - ys)/(ny-1)
@@ -48,11 +45,18 @@ tFinal = time()
 print "Nx = " + str(nx)
 print "Solve time=  " + str( tFinal - tInit)
 
-#fig = plt.figure()
-#ax = fig.add_subplot(111)
-#p1 = ax.plot(X[7,:] , HL[7,:])
-#ax.set_xlabel('x-direction[m]')
-#ax.set_ylabel('average hydraulic head [m]')
-#fig.suptitle("Center-line in Domain")
-#
-#plt.show()
+plottype = 0
+if plottype !=0:
+  if plottype == "line":
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    p1 = ax.plot(X[1,:] , HL[1,:])
+    ax.set_xlabel('x-direction[m]')
+    ax.set_ylabel('average hydraulic head [m]')
+    fig.suptitle("Center-line in Domain")
+  else:
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    surf = ax.plot_surface(X,Y,HL, rstride=1, cstride =1, linewidth =0, cmap = cm.jet, antialiased=False)
+    CB = plt.colorbar(surf, shrink = 0.8, extend = 'both')
+  plt.show()

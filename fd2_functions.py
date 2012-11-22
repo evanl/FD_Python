@@ -76,11 +76,17 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= 
   # OUTPUT
   N = (nx-2) * (ny -2)
 
-  
+  Loff = np.zeros((N,1))
+  L    = np.zeros((N,1))
+  R    = np.zeros((N,1))
+  Roff = np.zeros((N,1))
+
   if S == 0: 
-    A = np.zeros((N, N))
+    #A = np.zeros((N, N))
+    C = np.zeros((N,1))
   else:
-    A =  S / dt * np.eye(N) 
+    #A =  S / dt * np.eye(N) 
+    C = S/dt * np.ones((N,1))
 
   if r.all() == 0:    
     r = np.zeros((N,1))
@@ -99,14 +105,16 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= 
     y = ys + dy * row
 
     r[i] += S / dt
+    r[i] += dx * dy * Source(x,y,t) 
 
-    r[i] = r[i] + dx * dy * Source(x,y,t) 
-
+    
 
     #leakage
     if h0 != 0.0:
       r[i] -= K_B * h0 * dx * dy
-      A[i,i] -= K_B * dx * dy
+      #A[i,i] -= K_B * dx * dy
+
+      C[i] -= K_B * dx * dy
     
     TC = Transmissivity(x     , y     )
     TW = Transmissivity(x - dx, y     )
@@ -122,13 +130,16 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= 
     # am i on west face
     if  col == 1 :
       if bc.west_type == "flux":
-        r[i] = r[i] - bc.west_val
+        r[i] -= bc.west_val
       else:
         r[i] -= CW * bc.west_val
-        A[i,i] -= CW
+        #A[i,i] -= CW
+        C[i] -= CW
     else:
-      A[i, i-1] = CW
-      A[i,i] -= CW
+      #A[i, i-1] = CW
+      L[i-1] = CW
+      #A[i,i] -= CW
+      C[i] -= CW
 
     # east face
     if col == (nx-2):
@@ -136,10 +147,13 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= 
         r[i] += bc.east_val
       else:
         r[i] -= CE * bc.east_val
-        A[i,i] -= CE
+        #A[i,i] -= CE
+        C[i] -= CE
     else:
-      A[i,i+1] = CE
-      A[i,i] -= CE
+      #A[i,i+1] = CE
+      R[i+1] = CE
+      #A[i,i] -= CE
+      C[i] -= CE
 
     # south face
     if i < (nx-2):
@@ -147,31 +161,42 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= 
         r[i] -= bc.south_val
       else:
         r[i] -= CS * bc.south_val
-        A[i,i] -= CS
+        #A[i,i] -= CS
+        C[i] -= CS
     else:
-      A[i, i-(nx-2)] = CS
-      A[i,i] -= CS
-    
+      #A[i, i-(nx-2)] = CS
+      Loff[i-(nx-2)] = CS
+      #A[i,i] -= CS
+      C[i] -= CS
+
     # north face
     if i >= (N - (nx-2)):
       if bc.north_type == "flux":
         r[i] += bc.north_val
       else:
         r[i] -= CN * bc.north_val
-        A[i,i] -= CN
+        #A[i,i] -= CN
+        C[i] -= CN
     else:
-      A[i,i +(nx-2)] = CN
-      A[i,i] -= CN
+      #A[i,i +(nx-2)] = CN
+      Roff[i+(nx-2)] = CN
+      #A[i,i] -= CN
+      C[i] -= CN
 
   # end of  loop
   tpop = time()
   print "matrix create time = " +str(tpop - tinit)
 
-  # convert to sparse matrix for solve
-  Asparse = sp.dia_matrix(A)
-  b = splinalg.spsolve(Asparse,r)
+  # create new sparse matrix from pieces 
+  data = np.hstack((Loff, L, C, R, Roff))
+  data = np.transpose(data)
+  diags = np.array([-(nx-2), -1, 0, 1, (nx-2)])
+  Abuilt = sp.spdiags(data,diags,N,N)
 
-  print N, len(b)
+  # convert to sparse matrix for solve
+  #Asparse = sp.dia_matrix(A)
+  
+  b = splinalg.spsolve(Abuilt,r)
 
   tmatsolve = time()
   print "linalg solve time=  " + str( tmatsolve - tpop)
