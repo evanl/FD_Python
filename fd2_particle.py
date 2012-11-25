@@ -37,7 +37,7 @@ tInit = time()
 
 Y,X = np.mgrid[ ys:yn:ny*1j, xw:xe:nx*1j]
 
-HL = fd2.SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0 , K_B = 0. )
+H = fd2.SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0 , K_B = 0. )
 
 tFinal = time()
 
@@ -50,13 +50,17 @@ if plottype !=0:
   if plottype == "line":
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    p1 = ax.plot(X[1,:] , HL[1,:])
+    p1 = ax.plot(X[1,:] , H[1,:])
     ax.set_xlabel('x-direction[m]')
     ax.set_ylabel('average hydraulic head [m]')
     fig.suptitle("Center-line in Domain")
   else:
     fig = plt.figure()
     ax = Axes3D(fig)
-    surf = ax.plot_surface(X,Y,HL, rstride=1, cstride =1, linewidth =0, cmap = cm.jet, antialiased=False)
+    surf = ax.plot_surface(X,Y,H, rstride=1, cstride =1, linewidth =0, cmap = cm.jet, antialiased=False)
     CB = plt.colorbar(surf, shrink = 0.8, extend = 'both')
   plt.show()
+
+# particle tracking stuff goes here: 
+
+

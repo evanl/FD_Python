@@ -64,7 +64,9 @@ def Source(x,y,t, dx = 1., dy = 1., \
 def HarmAvg(T1, T2, dx1, dx2):
     return (dx1 + dx2) / ( (dx1/T1) + (dx2/T2))
 
+
 ##########################
+
 
 def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0, K_B =0.0): 
     
@@ -268,6 +270,94 @@ def TimeSolve( xw , xe, ys, yn, nx, ny, dx, dy, bc, tmax=1, nt=1, S=0, h0 = 0, K
         H[:,:,k] = SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t, S, dt, r, h0, K_B)
 
     return H
+    
+##########################
+# These functions are particle tracking functions,
+##########################
 
-    
-    
+
+def CalcFaceVelocities( hC, hW, hE, hS, hN, k, phi):
+  vW = k * ( hW - hC) / phi
+  vE = k * ( hC - hE) / phi
+  vS = k * ( hS - hC) / phi
+  vN = k * ( hC - hN) / phi
+
+  return vW, vE, vS, vN 
+
+##########################
+
+def CalcPosition (x0, Ax, vx0, vxp, dt):
+  return xp = x0 + (vxp * np.exp( Ax * dt) - vx0) / Ax
+
+#########################
+
+def CheckExit(vx0, vx1, vxp):
+  # returns False if no exit is possible in this direction. 
+  # returns 0 if an exit across face 0 is possible. 
+  # returns 1 if an exit across face 1 is possible. 
+  
+  # positive velocities
+  if (vx0 > 0 && vx1 > 0):
+    return 1
+
+  #negative velocities
+  elif(vx0 < 0 && vx1 < 0):
+    return 0
+
+  # sink condition
+  elif( vx0 > 0 && vx1 < 0):
+    return False
+
+  # flow divide condition
+  elif(vx0 < 0 && vx1 > 0):
+    if (vxp > 0 ):
+      return 1
+    else:
+      return 0
+
+  # no flow on left  edge. 
+  elif ( vx0 = 0):
+    if vx1 > 0:
+      return 1
+    else:
+      return False
+
+  # no flow on right edge
+  elif vx1 = 0: 
+    if vx0 < 0:
+      return 0
+    else:
+      return False
+  else:
+    print "Invalid velocity condition or input error"
+    exit(1)
+
+################################
+
+def ComputeTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
+  # assumes exit face conditions have been checked
+  # i.e. exit face is true and nonzero boundary velocities. 
+  if (vx0 !=0 && vx1 !=0):
+    if (vx1 != vx2):
+      if (vx1 > 0 && vx2 >0):
+        return np.log(vx2/vxp) / Ax
+      else:
+        return np.log(vx1/vxp) / Ax
+    else:
+      if vx1 > 0:
+        return (x2 - xp) / vx1
+      if vx1 < 0:
+        return (x1 - xp) / vx1
+   else:
+     print "make sure boundary velocities are nonzero"
+     exit(1)
+
+
+
+##########################
+
+def ParticleStep(x,  ) :
+  
+
+  return xnew, ynew, tnew
+
