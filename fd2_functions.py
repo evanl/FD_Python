@@ -265,16 +265,15 @@ def TimeSolve( xw , xe, ys, yn, nx, ny, dx, dy, bc, tmax=1, nt=1, S=0, h0 = 0, K
 ##########################
 
 
-def CalcFaceVelocities( hC, hW, hE, hS, hN, k, phi):
+def CalcFaceVelocities( hC, hW, hE, hS, hN, dx, dy, k, phi):
   vel = []
-  vel.append(k * ( hW - hC) / phi)
-  vel.append( k * ( hC - hE) / phi)
-  vel.append( k * ( hS - hC) / phi)
-  vel.append( k * ( hC - hN) / phi)
+  vel.append(k * ( hW - hC) / (dx * phi))
+  vel.append( k * ( hC - hE) / (dx * phi))
+  vel.append( k * ( hS - hC) / (dy * phi))
+  vel.append( k * ( hC - hN) / (dy * phi))
   #returns w e s n
   return vel 
-def CalcPosition (x0, Ax, vx0, vxp, dt):
-  return  x0 + (vxp * np.exp( Ax * dt) - vx0) / Ax
+    
 def CheckExit(vx0, vx1, vxp):
   # returns False if no exit is possible in this direction. 
   # returns 0 if an exit across face 0 is possible. 
@@ -315,12 +314,18 @@ def CheckExit(vx0, vx1, vxp):
   else:
     print "Invalid velocity condition or input error"
     exit(1)
-    
+
+def CalcPosition (x0, Ax, vx0, vxp, dt):
+  if Ax > 1e-3:
+    return  x0 + (vxp * np.exp( Ax * dt) - vx0) / Ax
+  else:
+    return x0 + dt * vx0
+
 def CalcTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
 # assumes exit face conditions have been checked
 # i.e. exit face is true and nonzero boundary velocities. 
   if (vx0 !=0 and vx1 !=0):
-    if (vx0 != vx1):
+    if (abs(vx1-vx0) > 1.e-6):
       if (vx0 > 0 and vx1 >0):
         return np.log(vx1/vxp) / Ax
       else:
@@ -335,9 +340,9 @@ def CalcTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
 
 class StepReturn(object):
 
-  def __init__ (self, xnew, dTmin, exitdir, exitface):
+  def __init__ (self, xnew, dtMin, exitdir, exitface):
     self.xnew = xnew
-    self.dTmin = dTmin
+    self.dtMin = dtMin
     self.exitdir = exitdir
     self.exitface = exitface
 
@@ -351,6 +356,7 @@ def ParticleStep(xp, vp, v0, v1, x0, x1, dx):
     exit[i] = CheckExit(v0[i],v1[i],vp[i])
     A.append((v1[i] - v0[i])/dx[i])
     if exit[i] != False:
+      print vp[i]
       dt[i] = CalcTravelTime(A[i], x0[i], x1[i], xp[i], v0[i], v1[i], vp[i])
 
   # All velocities are into the current cell. 
@@ -362,11 +368,15 @@ def ParticleStep(xp, vp, v0, v1, x0, x1, dx):
   # some clever stuff here. exitdir is binary, 0 is x direction, 1 is y direction
   # exitface is 0 for lower, 1 for upper. 
   exitdir = dt.index(min(dt))
-  exitface = exit(exitdir)
+  exitface = exit[exitdir]
   
   xnew = []
   for i in range(2):
-    xnew.append(CalcPosition(xp[i], A[i], v0[i], vp[i], dtMin))
+    if (v0[i] !=0.0 and v1[i] !=0 ):
+      xnew.append(CalcPosition(xp[i], A[i], v0[i], vp[i], dtMin))
+    else:
+      xnew.append(xp[i])
+
   
   step = StepReturn( xnew, dtMin, exitdir, exitface)
   return step
