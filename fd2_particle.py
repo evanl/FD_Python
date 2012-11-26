@@ -45,7 +45,7 @@ tFinal = time()
 print "Nx = " + str(nx)
 print "Solve time=  " + str( tFinal - tInit)
 
-plottype = 0
+plottype = "surf"
 if plottype !=0:
   if plottype == "line":
     fig = plt.figure()
@@ -59,8 +59,8 @@ if plottype !=0:
     ax = Axes3D(fig)
     surf = ax.plot_surface(X,Y,H, rstride=1, cstride =1, linewidth =0, cmap = cm.jet, antialiased=False)
     CB = plt.colorbar(surf, shrink = 0.8, extend = 'both')
-  plt.show()
-
+  #plt.show()
+plt.savefig('head.png')
 # particle tracking stuff goes here: 
 
 tpart = 1

@@ -315,6 +315,23 @@ def CheckExit(vx0, vx1, vxp):
   else:
     print "Invalid velocity condition or input error"
     exit(1)
+    
+def CalcTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
+# assumes exit face conditions have been checked
+# i.e. exit face is true and nonzero boundary velocities. 
+  if (vx0 !=0 and vx1 !=0):
+    if (vx0 != vx1):
+      if (vx0 > 0 and vx1 >0):
+        return np.log(vx1/vxp) / Ax
+      else:
+        return np.log(vx0/vxp) / Ax
+    else:
+      if vx0 > 0:
+        return (x1 - xp) / vx0
+      if vx0 < 0:
+        return (x0 - xp) / vx0
+  else:
+    return float('Inf')                 
 
 class StepReturn(object):
 
@@ -334,7 +351,7 @@ def ParticleStep(xp, vp, v0, v1, x0, x1, dx):
     exit[i] = CheckExit(v0[i],v1[i],vp[i])
     A.append((v1[i] - v0[i])/dx[i])
     if exit[i] != False:
-      dt[i] = ComputeTravelTime(A[i], x0[i], x1[i], xp[i], v0[i], v1[i], vp[i])
+      dt[i] = CalcTravelTime(A[i], x0[i], x1[i], xp[i], v0[i], v1[i], vp[i])
 
   # All velocities are into the current cell. 
     elif (exit[0] == False and exit[1] == False):
