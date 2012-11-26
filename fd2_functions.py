@@ -5,41 +5,37 @@ import scipy.sparse.linalg as splinalg
 
 class BoundaryCondition(object):
     
-    def __init__(self, w_t = "head", w_v = 0,  \
+  def __init__(self, w_t = "head", w_v = 0,  \
                        e_t = "head", e_v = 0, \
                        s_t = "head", s_v = 0, \
                        n_t = "head", n_v = 0 ):
 
         # if a boundary condition value is entered as a function, make sure to change boundary condition routine in SpatialSolve
-        self.west_type = w_t
-        self.west_val = w_v
- 
-        self.east_type = e_t
-        self.east_val = e_v
+    self.west_type = w_t
+    self.west_val = w_v
 
-        self.south_type = s_t
-        self.south_val = s_v
+    self.east_type = e_t
+    self.east_val = e_v
 
-        self.north_type = n_t
-        self.north_val = n_v
+    self.south_type = s_t
+    self.south_val = s_v
 
+    self.north_type = n_t
+    self.north_val = n_v
 #########################
-
-def Transmissivity(x, y):
+def Transmissivity(x, y, B = 10.0, xcond = 0.001, ycond = 0.001):
         
-    thickness = 10.0 
+    B = 10.0 
     xcond = 0.001
     ycond = 0.001
     
     T = []
 
-    T.append(thickness*xcond)
-    T.append(thickness*ycond)
+    T.append(B*xcond)
+    T.append(B*ycond)
 
     return T
-
 ##########################
-
 def Source(x,y,t, dx = 1., dy = 1., \
     infil = False, infilval = 0., \
     well = False, Qwell = 0.0, wellLoc = [0,0] ): 
@@ -57,17 +53,10 @@ def Source(x,y,t, dx = 1., dy = 1., \
         source = Qwell / (dx * dy)
 
   return source
-
 ##########################
-
-# harmonic average convenience function
 def HarmAvg(T1, T2, dx1, dx2):
     return (dx1 + dx2) / ( (dx1/T1) + (dx2/T2))
-
-
 ##########################
-
-
 def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0, K_B =0.0): 
     
   # # # 
@@ -277,53 +266,48 @@ def TimeSolve( xw , xe, ys, yn, nx, ny, dx, dy, bc, tmax=1, nt=1, S=0, h0 = 0, K
 
 
 def CalcFaceVelocities( hC, hW, hE, hS, hN, k, phi):
-  vW = k * ( hW - hC) / phi
-  vE = k * ( hC - hE) / phi
-  vS = k * ( hS - hC) / phi
-  vN = k * ( hC - hN) / phi
-
-  return vW, vE, vS, vN 
-
-##########################
-
+  vel = []
+  vel.append(k * ( hW - hC) / phi)
+  vel.append( k * ( hC - hE) / phi)
+  vel.append( k * ( hS - hC) / phi)
+  vel.append( k * ( hC - hN) / phi)
+  #returns w e s n
+  return vel 
 def CalcPosition (x0, Ax, vx0, vxp, dt):
-  return xp = x0 + (vxp * np.exp( Ax * dt) - vx0) / Ax
-
-#########################
-
+  return  x0 + (vxp * np.exp( Ax * dt) - vx0) / Ax
 def CheckExit(vx0, vx1, vxp):
   # returns False if no exit is possible in this direction. 
   # returns 0 if an exit across face 0 is possible. 
   # returns 1 if an exit across face 1 is possible. 
   
   # positive velocities
-  if (vx0 > 0 && vx1 > 0):
+  if (vx0 > 0 and vx1 > 0):
     return 1
 
   #negative velocities
-  elif(vx0 < 0 && vx1 < 0):
+  elif(vx0 < 0 and vx1 < 0):
     return 0
 
   # sink condition
-  elif( vx0 > 0 && vx1 < 0):
+  elif( vx0 > 0 and vx1 < 0):
     return False
 
   # flow divide condition
-  elif(vx0 < 0 && vx1 > 0):
+  elif(vx0 < 0 and vx1 > 0):
     if (vxp > 0 ):
       return 1
     else:
       return 0
 
   # no flow on left  edge. 
-  elif ( vx0 = 0):
+  elif ( vx0 == 0):
     if vx1 > 0:
       return 1
     else:
       return False
 
   # no flow on right edge
-  elif vx1 = 0: 
+  elif vx1 == 0: 
     if vx0 < 0:
       return 0
     else:
@@ -332,32 +316,40 @@ def CheckExit(vx0, vx1, vxp):
     print "Invalid velocity condition or input error"
     exit(1)
 
-################################
+class StepReturn(object):
 
-def ComputeTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
-  # assumes exit face conditions have been checked
-  # i.e. exit face is true and nonzero boundary velocities. 
-  if (vx0 !=0 && vx1 !=0):
-    if (vx1 != vx2):
-      if (vx1 > 0 && vx2 >0):
-        return np.log(vx2/vxp) / Ax
-      else:
-        return np.log(vx1/vxp) / Ax
-    else:
-      if vx1 > 0:
-        return (x2 - xp) / vx1
-      if vx1 < 0:
-        return (x1 - xp) / vx1
-   else:
-     print "make sure boundary velocities are nonzero"
-     exit(1)
+  def __init__ (self, xnew, dTmin, exitdir, exitface):
+    self.xnew = xnew
+    self.dTmin = dTmin
+    self.exitdir = exitdir
+    self.exitface = exitface
 
+def ParticleStep(xp, vp, v0, v1, x0, x1, dx):
+  # note, each of the inputs is a two element list.
+  # eg. xp[0] = xp, xp[1] = yp
+  A = []
+  exit = [0]*2
+  dt = [10000]*2
+  for i in range(2):
+    exit[i] = CheckExit(v0[i],v1[i],vp[i])
+    A.append((v1[i] - v0[i])/dx[i])
+    if exit[i] != False:
+      dt[i] = ComputeTravelTime(A[i], x0[i], x1[i], xp[i], v0[i], v1[i], vp[i])
 
+  # All velocities are into the current cell. 
+    elif (exit[0] == False and exit[1] == False):
+      return False, False, False
+    # check minimum time to exit cell
+  dtMin = min(dt)
 
-##########################
-
-def ParticleStep(x,  ) :
+  # some clever stuff here. exitdir is binary, 0 is x direction, 1 is y direction
+  # exitface is 0 for lower, 1 for upper. 
+  exitdir = dt.index(min(dt))
+  exitface = exit(exitdir)
   
-
-  return xnew, ynew, tnew
-
+  xnew = []
+  for i in range(2):
+    xnew.append(CalcPosition(xp[i], A[i], v0[i], vp[i], dtMin))
+  
+  step = StepReturn( xnew, dtMin, exitdir, exitface)
+  return step

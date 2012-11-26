@@ -28,7 +28,7 @@ S = 1000.0 * 9.81 * compressibility * thickness
 tmax = 0.5
 nt = 5
                           #west,        east        south        north
-bc = fd2.BoundaryCondition("head",5.0,"head", 10.0,"flux", 0.0,"flux", 0.0)
+bc = fd2.BoundaryCondition("head",25.0,"head", 0.0,"flux", 0.0,"flux", 0.0)
 
 dx = (xe - xw)/(nx-1)
 dy = (yn - ys)/(ny-1)
@@ -63,4 +63,75 @@ if plottype !=0:
 
 # particle tracking stuff goes here: 
 
+tpart = 1
+t = 0
 
+xpart = []
+ypart = []
+xpart.append( 5.)
+ypart.append( 5.)
+
+
+i=0
+j=0
+while X[1,i] < xpart[0]:
+  while Y[j,1] < ypart[0]:
+    j +=1
+  i+=1
+
+print i, j 
+print X[1,i], Y[j,1]
+
+t = 0
+outOfDomain = False
+# initialize location and velocity in step terms. 
+xp = []
+vp = []
+dxi = []
+xp.append(xpart[0])
+xp.append(ypart[0])
+vp.append(0.000001)
+vp.append(0.000001)
+dxi.append( dx)
+dxi.append( dx)
+
+while t < tpart and outOfDomain == False :
+  
+  vel = fd2.CalcFaceVelocities( H[j,i], H[j,i-1], H[j,i+1], H[j-1,i], H[j+1,i], 0.001, 0.25)
+  #creates vectors to pass into step function
+  v0,v1,x0,x1=[0]*2, [0]*2, [0]*2, [0]*2  
+  
+  v0[0] = vel[0]
+  v0[1] = vel[2]
+  v1[0] = vel[1]
+  v1[1] = vel[3]
+  
+  x0[0] = X[1,i] - dxi[0]
+  x0[1] = Y[j,1] - dxi[1]
+  x1[0] = X[1,i] + dxi[0]
+  x1[1] = Y[j,1] + dxi[1]
+  
+
+  step = fd2.ParticleStep(xp, vp, v0, v1, x0, x1, dxi)
+
+  if step.dTmin != False:
+    # increment necessary values to get to next timestep. 
+    t += step.dtMin    
+    xpart.append(step.xnew[0])
+    ypart.append(step.xnew[1])
+    xp[0] = step.xnew[0]
+    xp[1] = step.xnew[1]
+    if step.exitdir == 0:
+      if step.exitface == 1 :
+        i +=1
+      else:
+        i -=1
+    elif step.exitdir ==1:
+      if step.exitface ==1: 
+        j+=1
+      else:
+        j-=1
+  else:
+    outOfDomain = True
+
+  
