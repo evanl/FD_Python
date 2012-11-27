@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
 from time import clock, time
 import sys
@@ -23,7 +24,7 @@ ns = int(sys.argv[1])
 nx = ns
 ny = ns
                           #west,        east        south        north
-bc = fd2.BoundaryCondition("head",25.0,"head", 0.0,"flux", 0.0,"flux", 0.0)
+bc = fd2.BoundaryCondition("head",50.0,"head", 25.0,"flux", 0.0,"flux", 0.0)
 
 dx = (xe - xw)/(nx-1)
 dy = (yn - ys)/(ny-1)
@@ -32,7 +33,9 @@ tInit = time()
 
 Y,X = np.mgrid[ ys:yn:ny*1j, xw:xe:nx*1j]
 
-H = fd2.SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0 , K_B = 0. )
+H = fd2.SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, \
+    t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0 , K_B = 0.,\
+    well1=True, Qwell1=0.3, wellLoc1=[2500,2500])
 
 tFinal = time()
 
@@ -40,6 +43,8 @@ print "Nx = " + str(nx)
 print "Solve time=  " + str( tFinal - tInit)
 
 plottype = "surf"
+matplotlib.rcParams.update({'font.size': 14})
+
 if plottype !=0:
   if plottype == "line":
     fig = plt.figure()
@@ -50,22 +55,23 @@ if plottype !=0:
     fig.suptitle("Center-line in Domain")
   else:
     fig = plt.figure()
-    ax = Axes3D(fig)
-    surf = ax.plot_surface(X,Y,H, rstride=1, cstride =1, linewidth =0, cmap = cm.jet, antialiased=False)
-    CB = plt.colorbar(surf, shrink = 0.8, extend = 'both')
+    ax = fig.add_subplot(111)
+    surf = ax.contourf(X,Y,H,25,cmap = cm.bone)
+#    ax = Axes3D(fig)
+#    surf = ax.plot_surface(X,Y,H,25,cmap = cm.jet )
+    CB = plt.colorbar(surf, orientation='horizontal', ticks=[25,45])
+    CB.ax.set_xticklabels(['25' ,'45'])
     ax.set_xlabel('x-direction')
     ax.set_ylabel('y-direction')
-  #plt.show()
-plt.savefig('head.png')
 # particle tracking stuff goes here: 
 
-tpart = 500. 
+tpart = 4900
 t = 0.
 
 xpart = []
 ypart = []
 xpart.append( 100.)
-ypart.append( 100.)
+ypart.append( 1000.)
 
 
 i=0
@@ -75,9 +81,6 @@ while X[1,i] < xpart[0]:
     j +=1
   i+=1
 
-print i, j 
-print X[1,i], Y[j,1]
-
 t = 0
 outOfDomain = False
 # initialize location and velocity in step terms. 
@@ -86,12 +89,12 @@ vp = []
 dxi = []
 xp.append(xpart[0])
 xp.append(ypart[0])
-vp.append(0.000001)
-vp.append(0.000001)
+vp.append(1.)
+vp.append(1.)
 dxi.append( dx)
 dxi.append( dx)
 
-while t < tpart and outOfDomain == False :
+while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
   
   vel = fd2.CalcFaceVelocities( H[j,i], H[j,i-1], H[j,i+1], H[j-1,i], H[j+1,i], dx, dy, k, phi)
   #creates vectors to pass into step function
@@ -110,6 +113,8 @@ while t < tpart and outOfDomain == False :
 
   step = fd2.ParticleStep(xp, vp, v0, v1, x0, x1, dxi)
 
+  print "dtmin \/"
+  print step.dtMin
   if step.dtMin != False:
     # increment necessary values to get to next timestep. 
     t += step.dtMin    
@@ -117,21 +122,35 @@ while t < tpart and outOfDomain == False :
     ypart.append(step.xnew[1])
     xp[0] = step.xnew[0]
     xp[1] = step.xnew[1]
-    #vp[0] = step.vout[0]
-    #vp[1] = step.vout[1]
+
+    if ys > xp[1] > yn: 
+      print "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAUUUUUUUUUUUUUUUGGGGGGGHHHHHHHHHHHHHH"
+
     if step.exitdir == 0:
       if step.exitface == 1 :
         i +=1
+        vp[0] = v1[0]
+        vp[1] = 0.0
       else:
         i -=1
+        vp[0] = v0[0]
+        vp[1] = 0.0
     elif step.exitdir ==1:
       if step.exitface ==1: 
         j+=1
+        vp[1] = v1[1]
+        vp[0] - 0.0
       else:
         j-=1
+        vp[1] = v0[1]
+        vp[0] = 0
   else:
     outOfDomain = True
 
-print xpart
-print ypart
-print t
+X1 = np.asarray(xpart)
+Y1 = np.asarray(ypart)
+fig.add_subplot(111)
+p2 = ax.plot(X1,Y1,label = "particle tracks",color = 'r', marker = 'x', linestyle = '--')
+l = plt.legend(bbox_to_anchor=(1.05,1), loc=1, borderaxespad=0)
+plt.show()
+fig.savefig('track.png')

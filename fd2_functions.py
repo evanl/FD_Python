@@ -57,7 +57,9 @@ def Source(x,y,t, dx = 1., dy = 1., \
 def HarmAvg(T1, T2, dx1, dx2):
     return (dx1 + dx2) / ( (dx1/T1) + (dx2/T2))
 ##########################
-def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0, K_B =0.0): 
+def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, \
+    t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0, K_B =0.0,\
+    well1=False, Qwell1=0.0, wellLoc1=[0,0]): 
     
   # # # 
   # Spatial Solve 
@@ -96,7 +98,7 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, t = 0, S = 0, dt = 1.0, r= 
     y = ys + dy * row
 
     r[i] += S / dt
-    r[i] += dx * dy * Source(x,y,t) 
+    r[i] += dx * dy * Source(x,y,t,dx, dy, well = well1,Qwell= Qwell1,wellLoc =  wellLoc1) 
 
     
 
@@ -325,7 +327,9 @@ def CalcTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
 # assumes exit face conditions have been checked
 # i.e. exit face is true and nonzero boundary velocities. 
   if (vx0 !=0 and vx1 !=0):
-    if (abs(vx1-vx0) > 1.e-6):
+    print "vdiff"
+    print abs(vx1 - vx0)
+    if (abs(vx1-vx0) > 1.e-3):
       if (vx0 > 0 and vx1 >0):
         return np.log(vx1/vxp) / Ax
       else:
@@ -350,25 +354,27 @@ def ParticleStep(xp, vp, v0, v1, x0, x1, dx):
   # note, each of the inputs is a two element list.
   # eg. xp[0] = xp, xp[1] = yp
   A = []
-  exit = [0]*2
+  checkexit = []
   dt = [10000]*2
   for i in range(2):
-    exit[i] = CheckExit(v0[i],v1[i],vp[i])
+    checkexit.append( CheckExit(v0[i],v1[i],vp[i]))
     A.append((v1[i] - v0[i])/dx[i])
-    if exit[i] != False:
-      print vp[i]
+    if checkexit[i] != False:
       dt[i] = CalcTravelTime(A[i], x0[i], x1[i], xp[i], v0[i], v1[i], vp[i])
-
+  print "checkexit \/"
+  print checkexit
   # All velocities are into the current cell. 
-    elif (exit[0] == False and exit[1] == False):
-      return False, False, False
+  if (checkexit[0] == False and checkexit[1] == False):
+    return StepReturn(False,False,False,False)
     # check minimum time to exit cell
+  print "dt \/"
+  print dt
   dtMin = min(dt)
 
   # some clever stuff here. exitdir is binary, 0 is x direction, 1 is y direction
   # exitface is 0 for lower, 1 for upper. 
   exitdir = dt.index(min(dt))
-  exitface = exit[exitdir]
+  exitface = checkexit[exitdir]
   
   xnew = []
   for i in range(2):
