@@ -71,7 +71,7 @@ t = 0.
 xpart = []
 ypart = []
 xpart.append( 100.)
-ypart.append( 1000.)
+ypart.append( 3000.)
 
 
 i=0
@@ -80,6 +80,7 @@ while X[1,i] < xpart[0]:
   while Y[j,1] < ypart[0]:
     j +=1
   i+=1
+
 
 t = 0
 outOfDomain = False
@@ -99,6 +100,10 @@ while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
   vel = fd2.CalcFaceVelocities( H[j,i], H[j,i-1], H[j,i+1], H[j-1,i], H[j+1,i], dx, dy, k, phi)
   #creates vectors to pass into step function
   v0,v1,x0,x1=[0]*2, [0]*2, [0]*2, [0]*2  
+
+  print i,j
+  print "vel"
+  print vel
   
   v0[0] = vel[0]
   v0[1] = vel[2]
@@ -115,6 +120,7 @@ while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
 
   print "dtmin \/"
   print step.dtMin
+  print "\n\n"
   if step.dtMin != False:
     # increment necessary values to get to next timestep. 
     t += step.dtMin    
@@ -122,30 +128,27 @@ while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
     ypart.append(step.xnew[1])
     xp[0] = step.xnew[0]
     xp[1] = step.xnew[1]
-
-    if ys > xp[1] > yn: 
-      print "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAUUUUUUUUUUUUUUUGGGGGGGHHHHHHHHHHHHHH"
-
     if step.exitdir == 0:
       if step.exitface == 1 :
         i +=1
         vp[0] = v1[0]
-        vp[1] = 0.0
+        vp[1] = v1[1]
       else:
         i -=1
         vp[0] = v0[0]
-        vp[1] = 0.0
+        vp[1] = v0[0]
     elif step.exitdir ==1:
       if step.exitface ==1: 
         j+=1
         vp[1] = v1[1]
-        vp[0] - 0.0
+        vp[0] = v1[0]
       else:
         j-=1
         vp[1] = v0[1]
-        vp[0] = 0
+        vp[0] = v0[0]
   else:
     outOfDomain = True
+
 
 X1 = np.asarray(xpart)
 Y1 = np.asarray(ypart)

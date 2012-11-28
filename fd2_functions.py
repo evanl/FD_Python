@@ -291,7 +291,7 @@ def CheckExit(vx0, vx1, vxp):
 
   # sink condition
   elif( vx0 > 0 and vx1 < 0):
-    return False
+    return "flag"
 
   # flow divide condition
   elif(vx0 < 0 and vx1 > 0):
@@ -305,20 +305,20 @@ def CheckExit(vx0, vx1, vxp):
     if vx1 > 0:
       return 1
     else:
-      return False
+      return "flag"
 
   # no flow on right edge
   elif vx1 == 0: 
     if vx0 < 0:
       return 0
     else:
-      return False
+      return "flag"
   else:
     print "Invalid velocity condition or input error"
     exit(1)
 
 def CalcPosition (x0, Ax, vx0, vxp, dt):
-  if Ax > 1e-3:
+  if Ax > 1e-2:
     return  x0 + (vxp * np.exp( Ax * dt) - vx0) / Ax
   else:
     return x0 + dt * vx0
@@ -327,9 +327,9 @@ def CalcTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
 # assumes exit face conditions have been checked
 # i.e. exit face is true and nonzero boundary velocities. 
   if (vx0 !=0 and vx1 !=0):
-    print "vdiff"
-    print abs(vx1 - vx0)
-    if (abs(vx1-vx0) > 1.e-3):
+    print "AX  vx1  vxp"
+    print Ax, vx1, vxp
+    if (abs(vx1-vx0) > 1.e-2):
       if (vx0 > 0 and vx1 >0):
         return np.log(vx1/vxp) / Ax
       else:
@@ -356,17 +356,26 @@ def ParticleStep(xp, vp, v0, v1, x0, x1, dx):
   A = []
   checkexit = []
   dt = [10000]*2
+
+  print "location"
+
+  print xp[0], xp[1]
+
   for i in range(2):
+   
     checkexit.append( CheckExit(v0[i],v1[i],vp[i]))
+
+    print "velocities, exit status"
+    print v0[i], v1[i], checkexit[i]
+    
     A.append((v1[i] - v0[i])/dx[i])
-    if checkexit[i] != False:
+    if checkexit[i] != "flag":
       dt[i] = CalcTravelTime(A[i], x0[i], x1[i], xp[i], v0[i], v1[i], vp[i])
-  print "checkexit \/"
-  print checkexit
+      if dt[i] < 0:
+        dt[i] = dt[i] * -1
   # All velocities are into the current cell. 
-  if (checkexit[0] == False and checkexit[1] == False):
+  if (checkexit[0] == "flag" and checkexit[1] == "flag"):
     return StepReturn(False,False,False,False)
-    # check minimum time to exit cell
   print "dt \/"
   print dt
   dtMin = min(dt)
