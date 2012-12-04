@@ -327,8 +327,8 @@ def CalcTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
 # assumes exit face conditions have been checked
 # i.e. exit face is true and nonzero boundary velocities. 
   if (vx0 !=0 and vx1 !=0):
-    print "AX  vx1  vxp"
-    print Ax, vx1, vxp
+    print "AX  vx1  vx0  vxp"
+    print Ax, vx1, vx0, vxp
     if (abs(vx1-vx0) > 1.e-2):
       if (vx0 > 0 and vx1 >0):
         return np.log(vx1/vxp) / Ax
@@ -384,7 +384,10 @@ def ParticleStep(xp, vp, v0, v1, x0, x1, dx):
   # exitface is 0 for lower, 1 for upper. 
   exitdir = dt.index(min(dt))
   exitface = checkexit[exitdir]
-  
+  print "exitdir"
+  print exitdir
+  print "exitface"
+  print exitface
   xnew = []
   for i in range(2):
     if (v0[i] !=0.0 and v1[i] !=0 ):

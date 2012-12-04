@@ -56,13 +56,15 @@ if plottype !=0:
   else:
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    surf = ax.contourf(X,Y,H,25,cmap = cm.bone)
+    surf = ax.contour(X,Y,H,25,cmap = cm.bone)
 #    ax = Axes3D(fig)
 #    surf = ax.plot_surface(X,Y,H,25,cmap = cm.jet )
     CB = plt.colorbar(surf, orientation='horizontal', ticks=[25,45])
     CB.ax.set_xticklabels(['25' ,'45'])
     ax.set_xlabel('x-direction')
     ax.set_ylabel('y-direction')
+    ax.xaxis.grid(True)
+    ax.yaxis.grid(True)
 # particle tracking stuff goes here: 
 
 tpart = 4900
@@ -74,12 +76,6 @@ xpart.append( 100.)
 ypart.append( 3000.)
 
 
-i=0
-j=0
-while X[1,i] < xpart[0]:
-  while Y[j,1] < ypart[0]:
-    j +=1
-  i+=1
 
 
 t = 0
@@ -93,10 +89,22 @@ xp.append(ypart[0])
 vp.append(1.)
 vp.append(1.)
 dxi.append( dx)
-dxi.append( dx)
+dxi.append( dy)
+
+stepcount = 0
+i=0
+j=0
+while X[1,i] < xpart[stepcount]:
+  while Y[j,1] < ypart[stepcount]:
+    j +=1
+  i+=1
 
 while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
   
+  while X[1,i] + dx/2 < xpart[stepcount]:
+    while Y[j,1] +dy/2 < ypart[stepcount]:
+      j +=1
+    i+=1
   vel = fd2.CalcFaceVelocities( H[j,i], H[j,i-1], H[j,i+1], H[j-1,i], H[j+1,i], dx, dy, k, phi)
   #creates vectors to pass into step function
   v0,v1,x0,x1=[0]*2, [0]*2, [0]*2, [0]*2  
@@ -110,10 +118,10 @@ while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
   v1[0] = vel[1]
   v1[1] = vel[3]
   
-  x0[0] = X[1,i] - dxi[0]
-  x0[1] = Y[j,1] - dxi[1]
-  x1[0] = X[1,i] + dxi[0]
-  x1[1] = Y[j,1] + dxi[1]
+  x0[0] = X[1,i] - dxi[0]/2
+  x0[1] = Y[j,1] - dxi[1]/2
+  x1[0] = X[1,i] + dxi[0]/2
+  x1[1] = Y[j,1] + dxi[1]/2
   
 
   step = fd2.ParticleStep(xp, vp, v0, v1, x0, x1, dxi)
@@ -148,6 +156,8 @@ while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
         vp[0] = v0[0]
   else:
     outOfDomain = True
+
+  stepcount +=1
 
 
 X1 = np.asarray(xpart)
