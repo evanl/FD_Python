@@ -13,6 +13,12 @@ class TestParticleFunctions(unittest.testcase):
     v5 = -2.0
     v6 = -2.000000006
 
+# types of assertions
+# self.assertEqual(x,2)
+# self.assertAlmostEqual(x,1./5.)
+# self.assertRaises(Exception)
+#   only works if there is a function inside that does the following
+#     raise Exception ('ya messed up')
 
 if __name__ = "__main__":
   unittest.main()
