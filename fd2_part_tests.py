@@ -13,6 +13,8 @@ class TestParticleFunctions(unittest.testcase):
     v5 = -2.0
     v6 = -2.000000006
 
+    fd2part.CheckExit(v1:!
+
 # types of assertions
 # self.assertEqual(x,2)
 # self.assertAlmostEqual(x,1./5.)

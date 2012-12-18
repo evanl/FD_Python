@@ -189,6 +189,7 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, \
   # convert to sparse matrix for solve
   #Asparse = sp.dia_matrix(A)
   
+  #print Abuilt.todense()
   b = splinalg.spsolve(Abuilt,r)
 
   tmatsolve = time()
