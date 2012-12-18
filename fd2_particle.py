@@ -66,91 +66,14 @@ if plottype !=0:
     ax.set_ylabel('y-direction')
     ax.xaxis.grid(True)
     ax.yaxis.grid(True)
-# particle tracking stuff goes here: 
 
-tpart = 4900
-t = 0.
-
-xpart = []
-ypart = []
-xpart.append( 100.)
-ypart.append( 3000.)
-outOfDomain = False
-# initialize location and velocity in step terms. 
-xp = []
-vp = []
-dxi = []
-xp.append(xpart[0])
-xp.append(ypart[0])
-vp.append(1.)
-vp.append(1.)
-dxi.append( dx)
-dxi.append( dy)
-
-stepcount = 0
-i=0
-j=0
-while X[1,i] < xpart[stepcount]:
-  while Y[j,1] < ypart[stepcount]:
-    j +=1
-  i+=1
-
-  
-while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
-  
-  while X[1,i] + dx/2 < xpart[stepcount]:
-    while Y[j,1] +dy/2 < ypart[stepcount]:
-      j +=1
-    i+=1
-  vel = fd2part.CalcFaceVelocities( H[j,i], H[j,i-1], H[j,i+1], H[j-1,i], H[j+1,i], dx, dy, k, phi)
-  #creates vectors to pass into step function
-
-  v0,v1,x0,x1=[0]*2, [0]*2, [0]*2, [0]*2  
-
-  v0[0] = vel[0]
-  v0[1] = vel[2]
-  v1[0] = vel[1]
-  v1[1] = vel[3]
-  x0[0] = X[1,i] - dxi[0]/2
-  x0[1] = Y[j,1] - dxi[1]/2
-  x1[0] = X[1,i] + dxi[0]/2
-  x1[1] = Y[j,1] + dxi[1]/2
-  step = fd2part.ParticleStep(xp, vp, v0, v1, x0, x1, dxi)
-
-  print "dtmin \/"
-  print step.dtMin
-  print "\n\n"
-  if step.dtMin != False:
-    # increment necessary values to get to next timestep. 
-    t += step.dtMin    
-    xpart.append(step.xnew[0])
-    ypart.append(step.xnew[1])
-    xp[0] = step.xnew[0]
-    xp[1] = step.xnew[1]
-    if step.exitdir == 0:
-      if step.exitface == 1 :
-        i +=1
-        vp[0] = v1[0]
-        vp[1] = v1[1]
-      else:
-        i -=1
-        vp[0] = v0[0]
-        vp[1] = v0[0]
-    elif step.exitdir ==1:
-      if step.exitface ==1: 
-        j+=1
-        vp[1] = v1[1]
-        vp[0] = v1[0]
-      else:
-        j-=1
-        vp[1] = v0[1]
-        vp[0] = v0[0]
-  else:
-    outOfDomain = True
-
-  stepcount +=1
+# particle tracking 
+xp = 100.
+yp = 4000.
+xpart, ypart, tpart = fd2part.ParticleTrack(xp, yp, H, X, Y, dx, dy, nx, ny, k, phi)
 
 
+# plotting tools
 X1 = np.asarray(xpart)
 Y1 = np.asarray(ypart)
 fig.add_subplot(111)

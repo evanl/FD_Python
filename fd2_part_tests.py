@@ -42,15 +42,16 @@ class TestParticleFunctions(unittest.TestCase):
     self.assertEqual(c9, 0)
 
   def testTravelTime(self):
-    v1 = 0.005
-    v2 = 0.0051234515
-    v3 = -0.005
-    v4 = 2.4
-    v5 = 1.3
-    v6 = -3.
+    v = []
+    v[0] = 0.005
+    v[1] = 0.0051234515
+    v[2] = -0.005
+    v[3] = 2.4
+    v[4] = 1.3
+    v[5] = -3.
 
     
->>>>>>> d257d3c619ccf883dd0053dc61afec07ab42468e
+
 # types of assertions
 # self.assertEqual(x,2)
 # self.assertAlmostEqual(x,1./5.)
