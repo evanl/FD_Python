@@ -95,14 +95,6 @@ while X[1,i] < xpart[stepcount]:
     j +=1
   i+=1
 
-v0[0] = vel[0]
-v0[1] = vel[2]
-v1[0] = vel[1]
-v1[1] = vel[3]
-x0[0] = X[1,i] - dxi[0]/2
-x0[1] = Y[j,1] - dxi[1]/2
-x1[0] = X[1,i] + dxi[0]/2
-x1[1] = Y[j,1] + dxi[1]/2
   
 while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
   
@@ -112,8 +104,17 @@ while t < tpart and outOfDomain == False and 1 < i < nx-1 and 1 < j < ny-1:
     i+=1
   vel = fd2part.CalcFaceVelocities( H[j,i], H[j,i-1], H[j,i+1], H[j-1,i], H[j+1,i], dx, dy, k, phi)
   #creates vectors to pass into step function
+
   v0,v1,x0,x1=[0]*2, [0]*2, [0]*2, [0]*2  
 
+  v0[0] = vel[0]
+  v0[1] = vel[2]
+  v1[0] = vel[1]
+  v1[1] = vel[3]
+  x0[0] = X[1,i] - dxi[0]/2
+  x0[1] = Y[j,1] - dxi[1]/2
+  x1[0] = X[1,i] + dxi[0]/2
+  x1[1] = Y[j,1] + dxi[1]/2
   step = fd2part.ParticleStep(xp, vp, v0, v1, x0, x1, dxi)
 
   print "dtmin \/"

@@ -16,33 +16,33 @@ def CheckExit(vx0, vx1, vxp):
   # returns 1 if an exit across face 1 is possible. 
   
   # positive velocities
-  if (vx0 > 0 and vx1 > 0):
+  if (vx0 > 1.e-6 and vx1 > 1.e-6):
     return 1
 
   #negative velocities
-  elif(vx0 < 0 and vx1 < 0):
+  elif(vx0 < -1.e-6 and vx1 < -1.e-6):
     return 0
 
   # sink condition
-  elif( vx0 > 0 and vx1 < 0):
+  elif( vx0 > 1.e-6 and vx1 < -1.e-6):
     return "flag"
 
   # flow divide condition
-  elif(vx0 < 0 and vx1 > 0):
+  elif(vx0 < -1.e-6 and vx1 > 1.e-6):
     if (vxp > 0 ):
       return 1
     else:
       return 0
 
   # no flow on left  edge. 
-  elif ( vx0 == 0):
+  elif ( vx0 * vx0 < 1.e-12):
     if vx1 > 0:
       return 1
     else:
       return "flag"
 
   # no flow on right edge
-  elif vx1 == 0: 
+  elif (vx1 * vx1 < 1.e-12):
     if vx0 < 0:
       return 0
     else:
@@ -50,12 +50,6 @@ def CheckExit(vx0, vx1, vxp):
   else:
     print "Invalid velocity condition or input error"
     exit(1)
-
-def CalcPosition (x0, Ax, vx0, vxp, dt):
-  if Ax > 1e-2:
-    return  x0 + (vxp * np.exp( Ax * dt) - vx0) / Ax
-  else:
-    return x0 + dt * vx0
 
 def CalcTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
   # assumes exit face conditions have been checked
@@ -74,6 +68,12 @@ def CalcTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
         return (x0 - xp) / vx0
   else:
     return float('Inf')                 
+
+def CalcPosition (x0, Ax, vx0, vxp, dt):
+  if Ax > 1e-2:
+    return  x0 + (vxp * np.exp( Ax * dt) - vx0) / Ax
+  else:
+    return x0 + dt * vx0
 
 class StepReturn(object):
 
