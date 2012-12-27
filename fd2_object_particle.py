@@ -25,6 +25,8 @@ class ParticleField(object):
     self.k = conductivity
     self.phi = porosity
     self.t = [0.]
+    self.vp = [0. 0.]
+    self.outofdomain = False
 
 
   def ParticleTrack(tMax):
@@ -32,30 +34,46 @@ class ParticleField(object):
     Runs the particle tracking for the parameters that were initialized. 
     Follows the pollock algorithm prett closely this time.
     """
-    outOfDomain = False
 
     # Assign particle to cell 
     # assigns the index of the cell being used in the arrays. 
-    AssignInitialCell()
+    i, j = AssignInitialCell()
 
     while outOfDomain == False and self.t < tMax:
 
+      cel = GridCell(self.xgrid[i,j], self.ygrid[i,j], self.dx, self.dy\
+          self.k, self.phi)
+
+      
       # compute cell face velocities
-      GridCell.CalcFaceVelocities(self.head[i,j], self.head[i-1,j]\
+      cel.CalcFaceVelocities(self.head[i,j], self.head[i-1,j]\
           self.head[i+1,j], self.head[i,j-1], self.head[i,j+1])
 
       # determine exit faces
+      cel.AssignExitFaces(vp)
+      #need some way to make a discharge point possible.
+
 
       # Compute transit time, determine actual exit face
+      travel = CalcTravelTime(cel)
+
 
       # compute exit point coordinates
+      #xpout is 2d list
+      xpout = CalcPosition(cel, min(travel))
+
+      
+      # Determine new cell
+      i_add, j_add= AssignNewCell(cel, travel, xpout)
+      i = i + i_add
+      j = j + j_add
+
 
       # write particle coordinates and times to list
+      # some domain check goes here: 
       self.xp.append(xp_out)
       self.yp.append(yp_out)
-
-      # Determine new cell
-      AssignNewCell(exitFace )
+      
 
 class GridCell(xCenter, yCenter, dx, dy, conductivity, porosity):
   """ Grid cell contains the edge coordinates, face velocities and 
@@ -94,7 +112,54 @@ class GridCell(xCenter, yCenter, dx, dy, conductivity, porosity):
     for i in range(2):
       A[i] = (v1[i] - v0[i])/ dx[i]
     
-  def AssignExitFaces(
+  def AssignExitFaces(vp):
+    """
+    removes the possiblity of exiting through faces due to certain velocity conditions. 
+    vp must be a two-dimensional list where
+    vp[0] = vx
+    vp[1] = vy
+    """
+    v0 = self.v0
+    v1 = self.v1
+    tol = 1.e-6
+    for i in range(2):
 
-   
-  
+      # positive velocities
+      if (v0[i] > tol and v1[i] > tol):
+        exit0[i] = False
+      
+      #negative velocities
+      elif (v0[i] < -tol and v1[i] < -tol):
+        exit1[i] = False
+      
+      #sink condition
+      elif (v0[i] > tol and v1[i] < -tol):
+        exit0[i] = False
+        exit1[i] = False
+      
+      # flow divide condition
+      elif (v0[i] < - tol and v1[i] > tol ):
+        if vp[i] > 0. :
+          exit0[i] = False
+        else:
+          exit1[i] = False
+
+      # no flow on left edge
+      elif (v0[i] * v0[i] < tol * tol ):
+        exit0[i] = False
+        if v1[i] < 0. : 
+          exit1[i] = False 
+
+      #no flow on right edge
+      elif (v1[i] * v1[i] < tol * tol ):
+        exit1[i] = False
+        if v0[i] > 0. :
+          exit0[i] = False
+
+      else:
+        print "invalid velocity condition or input error"
+        print "vx0, vx1, vp"
+        for i in range(2):
+          print vx0[i], vx1[i], vp[i]
+        exit(1)
+
