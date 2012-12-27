@@ -58,7 +58,7 @@ def CalcTravelTime(Ax, x0, x1, xp, vx0, vx1, vxp):
   if (vx0 !=0 and vx1 !=0):
     print "AX  vx1  vx0  vxp"
     print Ax, vx1, vx0, vxp
-    if (abs(vx1 - vx0) > 1.):
+    if (abs(vx1 - vx0) > 1.e1):
       if (vx0 > 0 and vx1 >0):
         print " --------------------------1"
         return np.log(vx1/vxp) / Ax
@@ -202,8 +202,16 @@ def ParticleTrack(xpin, ypin, H, X, Y, dx, dy, nx, ny, k, phi):
     print i, j 
     print "edges x0, x1, y0, y1"
     print x0[0], x0[1], x1[0], x1[1]
+    print "xp"
+    print xp
+    if (x0[0] <= xp[0] <= x0[1] and x1[0] <= xp[1] <= x1[1]):
+      print "ok"
+    else:
+      print "WTF"
+      #exit(1)
+      
+      
 
-    print "xp", xp
     step = ParticleStep(xp, vp, v0, v1, x0, x1, dxi)
 
     print "dtmin \/"
@@ -211,6 +219,7 @@ def ParticleTrack(xpin, ypin, H, X, Y, dx, dy, nx, ny, k, phi):
     if step.dtMin != False:
       # increment necessary values to get to next timestep. 
       t += step.dtMin    
+      print "t = ", t 
 
       print "xpinit, ypinit"
       print xpart[-1], ypart[-1]
@@ -232,14 +241,12 @@ def ParticleTrack(xpin, ypin, H, X, Y, dx, dy, nx, ny, k, phi):
           j+=1
         else:
           j-=1
+      tpart.append(t)
+      vp[0] = (xpart[-1] - xpart[-2])/(tpart[-1] - tpart[-2])
+      vp[1] = (ypart[-1] - ypart[-1])/(tpart[-1] - tpart[-2])
+      stepcount +=1
+      print "\n\n"
     else:
       outOfDomain = True
-
-    tpart.append(t)
-    vp[0] = (xpart[-1] - xpart[-2])/(tpart[-1] - tpart[-2])
-    vp[1] = (ypart[-1] - ypart[-1])/(tpart[-1] - tpart[-2])
-    stepcount +=1
-    print "\n\n"
-
    
   return xpart, ypart, tpart

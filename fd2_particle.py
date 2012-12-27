@@ -69,7 +69,7 @@ if plottype !=0:
 
 # particle tracking 
 xp = 100.
-yp = 4000.
+yp = 3000.
 xpart, ypart, tpart = fd2part.ParticleTrack(xp, yp, H, X, Y, dx, dy, nx, ny, k, phi)
 
 

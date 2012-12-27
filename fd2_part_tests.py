@@ -50,6 +50,8 @@ class TestParticleFunctions(unittest.TestCase):
     v[4] = 1.3
     v[5] = -3.
 
+    A = []
+    
     
 
 # types of assertions
