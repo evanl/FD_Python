@@ -24,21 +24,52 @@ class BoundaryCondition(object):
     self.north_val = n_v
 #########################
 def Transmissivity(x, y, B = 10.0, xcond = 0.001, ycond = 0.001):
-        
-    B = 10.0 
-    xcond = 0.001
-    ycond = 0.001
-    
-    T = []
+  def thickness(x, y):
+    x = x * 3.281
+    y = y * 3.281 
+    if x < 550.:
+      bottom = 30. - (30 - -50.)/(850. - 0) * x
+    elif x < 850.:
+      bottom = -50
+    elif x < 1000.:
+      bottom = -50. + (10 - -50)/(1000.-850) * (x-850.)
+    elif x < 2250.:
+      bottom = 10 + (70. - 10) / (2250. - 1000) * ( x-1000.)
+    else :
+      bottom = 70.
 
-    T.append(B*xcond)
-    T.append(B*ycond)
+    if x < 1000:
+      top = 50
+    else :
+      top = 50 + (90 - 50) / (2250. - 1000) * (x - 1000.)
 
-    return T
+    # returns it in meters
+    return (top - bottom)/3.281
+
+  # need conductivity function
+  def conductivity(x,y):
+    x = x * 3.281
+    if x < 1350:
+      k = 100.
+    else : 
+      k = 10.
+    return k / 3.281
+  
+  B = thickness(x,y)
+
+  xcond = conductivity(x,y)
+  ycond = xcond
+  
+  T = []
+
+  T.append(B*xcond)
+  T.append(B*ycond)
+
+  return T
 ##########################
 def Source(x,y,t, dx = 1., dy = 1., \
     infil = False, infilval = 0., \
-    well = False, Qwell = 0.0, wellLoc = [0,0] ): 
+    well = False, Qwell = [0.0], wellLoc = [[0,0]] ): 
     
   source = 0.0
     #infiltration cases
@@ -47,10 +78,11 @@ def Source(x,y,t, dx = 1., dy = 1., \
 
   # well case 
   if well != False:
-
-    if (wellLoc[0] - dx)<  x  < (wellLoc[0] + dx):
-      if  (wellLoc[1] - dy)<  y  < (wellLoc[1] + dy):
-        source = Qwell / (dx * dy)
+    for i in range(len(wellLoc)):
+      if (wellLoc[i][0] - dx/2)<  x  < (wellLoc[i][0] + dx/2):
+        if  (wellLoc[i][1] - dy/2)<  y  < (wellLoc[i][1] + dy/2):
+          print "WEll " + str(i) + " IS ON"
+          source = source + Qwell[i] / (dx * dy)
 
   return source
 ##########################
@@ -59,7 +91,8 @@ def HarmAvg(T1, T2, dx1, dx2):
 ##########################
 def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, \
     t = 0, S = 0, dt = 1.0, r= np.zeros((1,1)), h0 = 0.0, K_B =0.0,\
-    well1=False, Qwell1=0.0, wellLoc1=[0,0]): 
+    wells=False, Qwell1=[0.0], wellLoc1=[[0,0]],
+    infil = False, infilval = 0): 
     
   # # # 
   # Spatial Solve 
@@ -98,17 +131,18 @@ def SpatialSolve(xw, xe, ys, yn, nx, ny, dx, dy, bc, \
     y = ys + dy * row
 
     r[i] += S / dt
-    r[i] += dx * dy * Source(x,y,t,dx, dy, well = well1,Qwell= Qwell1,wellLoc =  wellLoc1) 
-
-    
+    r[i] += dx * dy * Source(x,y,t,dx, dy, well = wells,Qwell= Qwell1,wellLoc =  wellLoc1,
+        infil= infil, infilval= infilval)
 
     #leakage
     if h0 != 0.0:
-      r[i] -= K_B * h0 * dx * dy
-      #A[i,i] -= K_B * dx * dy
-
-      C[i] -= K_B * dx * dy
-    
+      # river leakage stuff for final project problem
+      xriver = 870/3.281
+      if (xriver - dx/2)<  x  < (xriver + dx/2):
+        h0 = (45-43)/(3.281 * (yn - ys)) * y + 43/3.281
+        r[i] -= K_B * h0 * dx * dy
+        C[i] -= K_B * dx * dy
+      
     TC = Transmissivity(x     , y     )
     TW = Transmissivity(x - dx, y     )
     TE = Transmissivity(x + dx, y     ) 
